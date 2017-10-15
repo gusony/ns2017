@@ -4,7 +4,7 @@ __pycache__/
 *$py.class
 ckikuan.py
 *.txt
-
+report.*
 # C extensions
 *.so
 
