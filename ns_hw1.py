@@ -1,47 +1,61 @@
 from Crypto.PublicKey import RSA
 from fractions import gcd
+import sys
+import base64
 
-prime = []
 
-for i in range(1,12):
-    print('----------')
-    pub1 = open('public{}.pub'.format(i+1) ).read()
-    k1 = RSA.importKey(pub1);
-    print(k1.exportKey())
+pub = []
+
+'''
+def egcd(a, b):
+    if a == 0:
+        return (b, 0, 1)
+    else:
+        g, y, x = egcd(b % a, a)
+        return (g, x - (b // a) * y, y)
+
+def modinv(a, m):
+    g, x, y = egcd(a, m)
+    if g != 1:
+        raise Exception('modular inverse does not exist')
+    else:
+        return x % m
+'''
+
+def egcd(a, b):
+	x,y, u,v = 0,1, 1,0
+	while a != 0:
+		q, r = b//a, b%a
+		m, n = x-u*q, y-v*q
+		b,a, x,y, u,v = a,r, u,v, m,n
+	gcd = b
+	return gcd, x, y
+        
+for i in range(0,13):
+    pub.append ( RSA.importKey(open('public{}.pub'.format(i) ).read()))
+    
+for i in range(1,13):
     for j in range(i+1,13):
-        pub2 = open('public{}.pub'.format(j) ).read()
-        k2 = RSA.importKey(pub2);
-        if(gcd(k1.n, k2.n)>1):
-            prime.append(str(gcd(k1.n, k2.n)))
-            print("k1:"+str(i)+", k2:"+str(j)+" matched!")
-for j in range(len(prime)):
-    print(prime[j])
-    print('---------------------------------------------------------------------------------------------------')
+        if(gcd(pub[i].n, pub[j].n)!=1):
+            common_gcd = gcd(pub[i].n, pub[j].n)
+            
+            anotherP1 = pub[i].n / common_gcd
+            anotherP2 = pub[j].n / common_gcd
 
-'''
-import math
-key = []
-for i in range(12):
-    with open('public{}.txt'.format(i+1)) as f:
-        key.append(int(f.read().replace('Modulus=',""), 16))
-
-print('------------------------------------------------')
-for i in range(12):
-    print(key[i])
-    print('------------------------------------------------')
-
-raw_input()
-
-for x in key:
-	if not flag:
-		break
-	for y in key:
-		if x==y:
-			continue
-		g=math.gcd(x,y)
-		if g !=1 :
-			print(x)
-			print(y)
-			print(g)
-'''
-
+            phi1 = (anotherP1-1) *  (common_gcd-1)
+            phi2 = (anotherP2-1) *  (common_gcd-1)
+            
+            d1 = egcd( pub[i].e, phi1)[1] % phi1
+            d2 = egcd( pub[j].e, phi2)[1] % phi2
+            
+            private_key1 = RSA.construct((pub[i].n,pub[i].e,d1))
+            private_key2 = RSA.construct((pub[j].n,pub[j].e,d2))
+            f = open('private' + str(i) + '.pem','wb')
+            f.write(private_key1.exportKey('PEM'))
+            f.close()
+            f = open('private' + str(j) + '.pem','wb')
+            f.write(private_key2.exportKey('PEM'))
+            f.close()
+            
+            
+            
